@@ -1,1 +1,3 @@
-# Hey Mochi
+# Hey Mochi 🙌
+
+Ask [Mochi](https://mochi.gg/) about market today!
