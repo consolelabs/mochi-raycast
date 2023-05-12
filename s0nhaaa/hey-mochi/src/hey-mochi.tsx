@@ -1,20 +1,39 @@
 // @ts-nocheck
 
 import { Action, ActionPanel, getSelectedText, Icon, List, showToast, Toast } from '@raycast/api'
+import axios from 'axios'
 import { Configuration, OpenAIApi } from 'openai'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PROMPT_PREFIX, PROMPT_SURFIX } from './libs/constants'
 import { GeneratedAction } from './models'
 import { useAppStore } from './stores/app'
 import { ChainInfo, GasTrack, TokenInfo, TokenTrend } from './views'
 
-const configuration = new Configuration({
-  apiKey: '<OPENAI_API_KEY>',
-})
-
-const openai = new OpenAIApi(configuration)
-
+// https://hey-mochi-api.vercel.app/api/secret
 export default function Command() {
+  const [openaiSecretKey, setOpenaiSecretKey] = useState('')
+
+  const configuration = useMemo(
+    () =>
+      openaiSecretKey
+        ? new Configuration({
+            apiKey: openaiSecretKey,
+          })
+        : null,
+    [openaiSecretKey],
+  )
+
+  const openai = useMemo(() => (configuration ? new OpenAIApi(configuration) : null), [configuration])
+
+  useEffect(() => {
+    const fetchOpenAiSecret = async () => {
+      const response = await axios.get<{ key: string }>('https://hey-mochi-api.vercel.app/api/secret')
+      setOpenaiSecretKey(response.data.key)
+    }
+
+    fetchOpenAiSecret()
+  }, [])
+
   const [prompt, setPrompt] = useState('')
   const [isLoading, isShowingDetail, setIsLoading, setIsShowingDetail] = useAppStore((state) => [
     state.isLoading,
@@ -65,38 +84,40 @@ export default function Command() {
   }
 
   return (
-    <List
-      searchText={prompt}
-      filtering={false}
-      throttle={false}
-      onSearchTextChange={setPrompt}
-      navigationTitle='Ask Mochi'
-      searchBarPlaceholder='Ask Mochi about today market'
-      isLoading={isLoading}
-      isShowingDetail={isShowingDetail}
-      actions={
-        <ActionPanel>
-          <Action title='Get answer' onAction={handleAction} />
-        </ActionPanel>
-      }>
-      {generatedAction ? (
-        <>
-          {
+    <>
+      <List
+        searchText={prompt}
+        filtering={false}
+        throttle={false}
+        onSearchTextChange={setPrompt}
+        navigationTitle='Ask Mochi'
+        searchBarPlaceholder='Ask Mochi about today market'
+        isLoading={!Boolean(openaiSecretKey) || isLoading}
+        isShowingDetail={isShowingDetail}
+        actions={
+          <ActionPanel>
+            <Action title='Get answer' onAction={handleAction} />
+          </ActionPanel>
+        }>
+        {generatedAction ? (
+          <>
             {
-              'chain-info': <ChainInfo action={handleAction} generatedAction={generatedAction} />,
-              'token-trend': <TokenTrend action={handleAction} generatedAction={generatedAction} />,
-              'gas-track': <GasTrack action={handleAction} generatedAction={generatedAction} />,
-              'token-info': <TokenInfo action={handleAction} generatedAction={generatedAction} />,
-            }[generatedAction.type]
-          }
-        </>
-      ) : (
-        <List.EmptyView
-          title='Ask Mochi about market token!'
-          description={'Type your question or prompt from the search bar and hit the enter key'}
-          icon={Icon.QuestionMark}
-        />
-      )}
-    </List>
+              {
+                'chain-info': <ChainInfo action={handleAction} generatedAction={generatedAction} />,
+                'token-trend': <TokenTrend action={handleAction} generatedAction={generatedAction} />,
+                'gas-track': <GasTrack action={handleAction} generatedAction={generatedAction} />,
+                'token-info': <TokenInfo action={handleAction} generatedAction={generatedAction} />,
+              }[generatedAction.type]
+            }
+          </>
+        ) : (
+          <List.EmptyView
+            title='Ask Mochi about market token!'
+            description={'Type your question or prompt from the search bar and hit the enter key'}
+            icon={Icon.QuestionMark}
+          />
+        )}
+      </List>
+    </>
   )
 }
