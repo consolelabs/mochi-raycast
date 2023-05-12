@@ -1,10 +1,11 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "hey-mochi",
-  "title": "Mochi",
-  "description": "Mochi extension for Raycast",
+  "title": "Hey Mochi",
+  "description": "Mochi QnA extension for Raycast",
   "icon": "command-icon.png",
   "author": "s0nhaaa",
+  "owner": "mochi",
   "license": "MIT",
   "commands": [
     {
